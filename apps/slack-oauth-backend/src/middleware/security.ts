@@ -317,6 +317,22 @@ export const requestLogger = (
 };
 
 /**
+ * Repeatedly strips HTML tag-like patterns until the string stabilizes.
+ * This prevents unsafe fragments from reappearing after a single replacement pass.
+ */
+const stripHtmlTagsIteratively = (input: string): string => {
+  let previous: string;
+  let sanitized = input;
+
+  do {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  } while (sanitized !== previous);
+
+  return sanitized.trim();
+};
+
+/**
  * Input sanitization middleware
  */
 export const sanitizeInput = (
@@ -330,7 +346,7 @@ export const sanitizeInput = (
       const value = req.query[key];
       if (typeof value === 'string') {
         // Remove any HTML tags and trim whitespace
-        req.query[key] = value.replace(/<[^>]*>/g, '').trim();
+        req.query[key] = stripHtmlTagsIteratively(value);
       }
     });
   }
@@ -341,7 +357,7 @@ export const sanitizeInput = (
       const value = req.body[key];
       if (typeof value === 'string') {
         // Remove any HTML tags and trim whitespace
-        req.body[key] = value.replace(/<[^>]*>/g, '').trim();
+        req.body[key] = stripHtmlTagsIteratively(value);
       }
     });
   }
